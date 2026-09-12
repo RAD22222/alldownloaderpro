@@ -22,8 +22,32 @@ if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
+const COOKIES_DIR = path.join(__dirname, 'cookies');
+if (!fs.existsSync(COOKIES_DIR)) {
+  fs.mkdirSync(COOKIES_DIR, { recursive: true });
+}
+
 app.use(cors());
 app.use(express.json());
+
+// Store/Get YouTube cookies (Netscape format)
+app.post('/api/cookies', (req, res) => {
+  const { cookies } = req.body;
+  if (!cookies) {
+    return res.json({ success: false, error: 'Cookies are required' });
+  }
+  fs.writeFileSync(path.join(COOKIES_DIR, 'youtube.txt'), cookies, 'utf-8');
+  res.json({ success: true });
+});
+
+app.get('/api/cookies', (req, res) => {
+  const cookieFile = path.join(COOKIES_DIR, 'youtube.txt');
+  if (fs.existsSync(cookieFile)) {
+    res.json({ success: true, hasCookies: true });
+  } else {
+    res.json({ success: true, hasCookies: false });
+  }
+});
 
 const PLATFORMS = {
   'youtube.com': 'youtube', 'youtu.be': 'youtube',
@@ -95,6 +119,12 @@ app.post('/api/analyze', async (req, res) => {
     '--no-check-certificates',
     '--encoding', 'utf-8',
   ] : [];
+
+  // Add cookies for YouTube if available
+  const cookieFile = path.join(COOKIES_DIR, 'youtube.txt');
+  if (platform === 'youtube' && fs.existsSync(cookieFile)) {
+    youtubeFlags.push('--cookies', cookieFile);
+  }
 
   try {
     const { stdout } = await execFileAsync(YT_DLP_CMD, [
@@ -216,6 +246,12 @@ app.get('/api/download-stream', (req, res) => {
     '--user-agent', 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36',
     '--no-check-certificates',
   ] : [];
+
+  // Add cookies for YouTube if available
+  const dlCookieFile = path.join(COOKIES_DIR, 'youtube.txt');
+  if (platform2 === 'youtube' && fs.existsSync(dlCookieFile)) {
+    youtubeDownloadFlags.push('--cookies', dlCookieFile);
+  }
 
   let args;
 

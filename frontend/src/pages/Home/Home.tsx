@@ -7,6 +7,7 @@ import { FormatSelector } from '@/components/FormatSelector';
 import { ProcessingIndicator } from '@/components/ProcessingIndicator';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { DownloadProgress } from '@/components/DownloadProgress';
+import CookieInput from '@/components/CookieInput';
 import { useAnalyze, useDownloadStream } from '@/hooks/useApi';
 import styles from './Home.module.css';
 
@@ -112,6 +113,7 @@ export function Home() {
           isLoading={isAnalyzing}
           error={error || undefined}
         />
+        <CookieInput />
       </section>
 
       {isAnalyzing && (
