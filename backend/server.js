@@ -13,8 +13,8 @@ const app = express();
 const PORT = 8000;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Use Python module since yt-dlp is not installed as standalone exe
-const YT_DLP_CMD = 'py';
+// Use Python module — works with system python3 (Render/Docker) or py (Windows)
+const YT_DLP_CMD = process.platform === 'win32' ? 'py' : 'python3';
 const YT_DLP_ARGS = ['-m', 'yt_dlp'];
 const TEMP_DIR = path.join(os.tmpdir(), 'media-downloader');
 
