@@ -88,9 +88,16 @@ app.post('/api/analyze', async (req, res) => {
 
   const platform = detectPlatform(url);
 
+  // YouTube-specific flags to bypass bot detection
+  const youtubeFlags = platform === 'youtube' ? [
+    '--extractor-args', 'youtube:player_client=ios,web_creator',
+    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  ] : [];
+
   try {
     const { stdout } = await execFileAsync(YT_DLP_CMD, [
       ...YT_DLP_ARGS,
+      ...youtubeFlags,
       '--dump-json', '--no-download', '--no-warnings', '--no-playlist', url,
     ], { timeout: 60000 });
 
@@ -200,6 +207,13 @@ app.get('/api/download-stream', (req, res) => {
   const safeTitle = sanitizeFilename(title || 'download');
   const outputFile = path.join(TEMP_DIR, `${outputId}.${ext}`);
 
+  // YouTube-specific flags to bypass bot detection
+  const platform2 = detectPlatform(url);
+  const youtubeDownloadFlags = platform2 === 'youtube' ? [
+    '--extractor-args', 'youtube:player_client=ios,web_creator',
+    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  ] : [];
+
   let args;
 
   if (isMp3) {
@@ -229,7 +243,7 @@ app.get('/api/download-stream', (req, res) => {
 
   sendEvent('start', { message: 'Starting download...' });
 
-  const proc = spawn(YT_DLP_CMD, [...YT_DLP_ARGS, ...args]);
+  const proc = spawn(YT_DLP_CMD, [...YT_DLP_ARGS, ...youtubeDownloadFlags, ...args]);
   let lastProgress = 0;
 
   proc.stdout.on('data', (data) => {
