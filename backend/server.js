@@ -16,11 +16,27 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Use Python module — works with system python3 (Render/Docker) or py (Windows)
 const YT_DLP_CMD = process.platform === 'win32' ? 'py' : 'python3';
 const YT_DLP_ARGS = ['-m', 'yt_dlp'];
-const TEMP_DIR = path.join(os.tmpdir(), 'media-downloader');
+const TEMP_DIR = path.join(__dirname, 'temp-downloads');
 
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
+
+// Clean up old files every 10 minutes
+setInterval(() => {
+  try {
+    const files = fs.readdirSync(TEMP_DIR);
+    const now = Date.now();
+    for (const file of files) {
+      const filePath = path.join(TEMP_DIR, file);
+      const stat = fs.statSync(filePath);
+      // Delete files older than 15 minutes
+      if (now - stat.mtimeMs > 15 * 60 * 1000) {
+        try { fs.unlinkSync(filePath); } catch {}
+      }
+    }
+  } catch {}
+}, 10 * 60 * 1000);
 
 const COOKIES_DIR = path.join(__dirname, 'cookies');
 if (!fs.existsSync(COOKIES_DIR)) {
@@ -382,31 +398,44 @@ app.get('/api/file/:token', (req, res) => {
   const { token } = req.params;
   const { filename } = req.query;
 
-  const dir = TEMP_DIR;
-  const files = fs.readdirSync(dir).filter(f => f.startsWith(token));
+  try {
+    const dir = TEMP_DIR;
+    if (!fs.existsSync(dir)) {
+      return res.status(404).json({ error: 'File not found or expired' });
+    }
 
-  if (files.length === 0) {
-    return res.status(404).json({ error: 'File not found or expired' });
+    const files = fs.readdirSync(dir).filter(f => f.startsWith(token));
+
+    if (files.length === 0) {
+      return res.status(404).json({ error: 'File not found or expired' });
+    }
+
+    const filePath = path.join(dir, files[0]);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found or expired' });
+    }
+
+    const stat = fs.statSync(filePath);
+    const ext = path.extname(filePath);
+    const downloadName = filename || `download${ext}`;
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
+
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+
+    // Clean up after download
+    res.on('finish', () => {
+      setTimeout(() => {
+        try { fs.unlinkSync(filePath); } catch {}
+      }, 10 * 60 * 1000);
+    });
+  } catch (err) {
+    console.error('File serve error:', err);
+    res.status(500).json({ error: 'Failed to serve file' });
   }
-
-  const filePath = path.join(dir, files[0]);
-  const stat = fs.statSync(filePath);
-  const ext = path.extname(filePath);
-  const downloadName = filename || `download${ext}`;
-
-  res.setHeader('Content-Type', 'application/octet-stream');
-  res.setHeader('Content-Length', stat.size);
-  res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
-
-  const stream = fs.createReadStream(filePath);
-  stream.pipe(res);
-
-  // Clean up after download
-  res.on('finish', () => {
-    setTimeout(() => {
-      try { fs.unlinkSync(filePath); } catch {}
-    }, 60000); // Delete after 1 minute
-  });
 });
 
 app.listen(PORT, () => {
