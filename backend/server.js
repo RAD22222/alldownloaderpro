@@ -90,8 +90,10 @@ app.post('/api/analyze', async (req, res) => {
 
   // YouTube-specific flags to bypass bot detection
   const youtubeFlags = platform === 'youtube' ? [
-    '--extractor-args', 'youtube:player_client=ios,web_creator',
-    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    '--extractor-args', 'youtube:player_client=mweb,tv,web_creator',
+    '--user-agent', 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36',
+    '--no-check-certificates',
+    '--encoding', 'utf-8',
   ] : [];
 
   try {
@@ -210,8 +212,9 @@ app.get('/api/download-stream', (req, res) => {
   // YouTube-specific flags to bypass bot detection
   const platform2 = detectPlatform(url);
   const youtubeDownloadFlags = platform2 === 'youtube' ? [
-    '--extractor-args', 'youtube:player_client=ios,web_creator',
-    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    '--extractor-args', 'youtube:player_client=mweb,tv,web_creator',
+    '--user-agent', 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36',
+    '--no-check-certificates',
   ] : [];
 
   let args;
