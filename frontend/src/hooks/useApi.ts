@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { MediaInfo, Platform, MediaType } from '@/types';
 import { DownloadStatus, DownloadProgressData, DownloadCompleteData } from '@/components/DownloadProgress';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface ApiResponse<T> {
   success: boolean;

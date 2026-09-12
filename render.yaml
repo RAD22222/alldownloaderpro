@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: alldownloaderpro-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: NODE_ENV
+        value: production
